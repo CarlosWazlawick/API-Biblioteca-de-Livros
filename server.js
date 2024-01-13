@@ -1,162 +1,104 @@
+const express = require('express');
+const server = express();
+const fs = require('fs');
+const banco = require('./banco.json');
+
+server.use(express.json());
+
 function salvarDados() {
     fs.writeFileSync(__dirname + '/banco.json', JSON.stringify(banco, null, 2));
 }
 
-const express = require('express');
-const server = express();
-const banco = require('./banco.json');
-const fs = require('fs');
-
-server.use(express.json());
-
 server.get('/', (req, res) => {
-    return res.json({ mensagem: "Nossa Api está funcionando" });
+    return res.json({ mensagem: "Bem-vindo à nossa incrível API de livros!" });
 });
 
 server.listen(3000, () => {
-    console.log("server está funcionando");
+    console.log("O servidor está ativo na porta 3000");
 });
 
 server.get('/livros', (req, res) => {
     return res.json(banco.Livros);
 });
 
-server.get('/livros/pesquisa', (req, res) => {
-    return res.json(banco.Livros);
-});
+server.get('/livros/pesquisa/:termo', (req, res) => {
+    const termo = req.params.termo.toLowerCase();
+    const livrosEncontrados = banco.Livros.filter(livro =>
+        livro.titulo.toLowerCase().includes(termo) ||
+        livro.autor.toLowerCase().includes(termo) ||
+        livro.anoPublicado.toString().toLowerCase().includes(termo) ||
+        livro.genero.toLowerCase().includes(termo)
+    );
 
-server.get('/livros/pesquisa/:variavel', (req, res) => {
-    const variaveisLivro = req.params.variavel.toLowerCase();
-    const livrosTitulo = banco.Livros.filter(Livros => Livros.titulo.toLowerCase() === variaveisLivro);
-    const livrosAutor = banco.Livros.filter(Livros => Livros.autor.toLowerCase() === variaveisLivro);
-    const livrosAnoPublicado = banco.Livros.filter(Livros => Livros.anoPublicado.toString().toLowerCase() === variaveisLivro);
-    const livrosGenero = banco.Livros.filter(Livros => Livros.genero.toLowerCase() === variaveisLivro);
-
-    if (livrosTitulo.length > 0) {
-        res.json(livrosTitulo);
-    } else if (livrosAutor.length > 0) {
-        res.json(livrosAutor);
-    } else if (livrosAnoPublicado.length > 0) {
-        res.json(livrosAnoPublicado);
-    } else if (livrosGenero.length > 0) {
-        res.json(livrosGenero);
+    if (livrosEncontrados.length > 0) {
+        res.json(livrosEncontrados);
     } else {
-        res.status(404).json({ mensagem: "livro não encontrado." });
+        res.status(404).json({ mensagem: "Nenhum livro encontrado." });
     }
 });
 
-server.get('/livros/ordenar/:variavel', (req, res) => {
-    var variaveisLivro = req.params.variavel.toLowerCase();
-    variaveisLivro = variaveisLivro.toLowerCase();
-    var livrosOrdenados = [];
+server.get('/livros/ordenar/:criterio', (req, res) => {
+    const criterio = req.params.criterio.toLowerCase();
+    let livrosOrdenados = [];
 
-    switch (variaveisLivro) {
+    switch (criterio) {
         case "titulo":
             livrosOrdenados = banco.Livros.sort((a, b) => a.titulo.localeCompare(b.titulo));
-            res.json(livrosOrdenados);
             break;
-
         case "autor":
             livrosOrdenados = banco.Livros.sort((a, b) => a.autor.localeCompare(b.autor));
-            res.json(livrosOrdenados);
             break;
-
         case "ano":
             livrosOrdenados = banco.Livros.sort((a, b) => a.anoPublicado.localeCompare(b.anoPublicado));
-            res.json(livrosOrdenados);
             break;
-
         case "genero":
             livrosOrdenados = banco.Livros.sort((a, b) => a.genero.localeCompare(b.genero));
-            res.json(livrosOrdenados);
             break;
-
         case "id":
-            res.json(banco.Livros);
+            livrosOrdenados = banco.Livros;
             break;
-
         default:
-            res.json("erro errado");
-            break;
-    }
-});
-
-server.get('/livros/stats/', (req, res) => {
-    var livros = banco.Livros;
-    var stats = [];
-    const totalLivros = livros.length;
-
-    const estatisticasPorAutor = {};
-    for (const livro of livros) {
-        const autor = livro.autor;
-        if (!estatisticasPorAutor.hasOwnProperty(autor)) {
-            estatisticasPorAutor[autor] = 0;
-        }
-        estatisticasPorAutor[autor]++;
+            res.status(400).json({ mensagem: "Critério de ordenação inválido." });
+            return;
     }
 
-    const estatisticasPorGenero = {};
-    for (const livro of livros) {
-        const genero = livro.genero;
-        if (!estatisticasPorGenero.hasOwnProperty(genero)) {
-            estatisticasPorGenero[genero] = 0;
-        }
-        estatisticasPorGenero[genero]++;
-    }
-
-    const estatisticasPorAno = {};
-    for (const livro of livros) {
-        const ano = livro.anoPublicado;
-        if (!estatisticasPorAno.hasOwnProperty(ano)) {
-            estatisticasPorAno[ano] = 0;
-        }
-        estatisticasPorAno[ano]++;
-    }
-    stats = [{
-        totalLivros: totalLivros,
-        estatisticasPorAutor: estatisticasPorAutor,
-        estatisticasPorGenero: estatisticasPorGenero,
-        estatisticasPorAno: estatisticasPorAno,
-    }];
-    res.json(stats);
+    res.json(livrosOrdenados);
 });
 
 server.post('/livros', (req, res) => {
-    const novoLivros = req.body;
+    const novoLivro = req.body;
 
-    if (!novoLivros.id || !novoLivros.titulo || !novoLivros.autor || !novoLivros.anoPublicado || !novoLivros.genero) {
-        return res.status(400).json({ mensagem: "Informações incompletas." });
-    } else {
-        banco.Livros.push(novoLivros);
-        salvarDados(banco);
-        return res.status(201).json({ mensagem: "Livro cadastrado com sucesso." });
+    if (!novoLivro.id || !novoLivro.titulo || !novoLivro.autor || !novoLivro.anoPublicado || !novoLivro.genero) {
+        return res.status(400).json({ mensagem: "Por favor, forneça todas as informações do livro." });
     }
+
+    banco.Livros.push(novoLivro);
+    salvarDados();
+
+    return res.status(201).json({ mensagem: "Livro cadastrado com sucesso!" });
 });
 
 server.put('/livros/:id', (req, res) => {
-    const livrosId = parseInt(req.params.id);
-    const atualizaLivros = req.body;
-    const idLivros = banco.Livros.findIndex(Livros => Livros.id === livrosId);
+    const livroId = parseInt(req.params.id);
+    const livroAtualizado = req.body;
 
-    if (idLivros === -1) {
-        return res.status(404).json({ mensagem: "Erro na alteração do livro." });
-    } else {
-        banco.Livros[idLivros].titulo = atualizaLivros.titulo || banco.Livros[idLivros].titulo;
-        banco.Livros[idLivros].autor = atualizaLivros.autor || banco.Livros[idLivros].autor;
-        banco.Livros[idLivros].anoPublicado = atualizaLivros.anoPublicado || banco.Livros[idLivros].anoPublicado;
-        banco.Livros[idLivros].genero = atualizaLivros.genero || banco.Livros[idLivros].genero;
+    const indexLivro = banco.Livros.findIndex(livro => livro.id === livroId);
 
-        salvarDados(banco);
-
-        return res.json({ mensagem: "Livro atualizado com sucesso.", Livros: banco.Livros[idLivros] });
+    if (indexLivro === -1) {
+        return res.status(404).json({ mensagem: "Livro não encontrado." });
     }
+
+    banco.Livros[indexLivro] = { ...banco.Livros[indexLivro], ...livroAtualizado };
+    salvarDados();
+
+    return res.json({ mensagem: "Livro atualizado com sucesso!", livro: banco.Livros[indexLivro] });
 });
 
 server.delete('/livros/:id', (req, res) => {
-    const livrosId = parseInt(req.params.id);
+    const livroId = parseInt(req.params.id);
 
-    banco.Livros = banco.Livros.filter(Livros => Livros.id !== livrosId);
-    salvarDados(banco);
+    banco.Livros = banco.Livros.filter(livro => livro.id !== livroId);
+    salvarDados();
 
-    return res.status(200).json({ mensagem: "Livro excluído com sucesso" });
+    return res.status(200).json({ mensagem: "Livro excluído com sucesso!" });
 });

@@ -1,72 +1,89 @@
 const cardContainer = document.getElementById("cardContainer");
-const barraDePesquisa = document.getElementById("barraDePesquisa");
+const searchBar = document.getElementById("barraDePesquisa");
 
-let items = [];
+let livros = [];
 
 fetch("banco.json")
     .then((data) => data.json())
     .then((data) => {
-        items = data.Livros;
+        livros = data.Livros;
+        exibirCards(); 
     });
 
 document.getElementById("confirmarBtn").addEventListener("click", function () {
-    exibirCards();
+    mostrarLivros();
 });
 
-barraDePesquisa.addEventListener("keydown", function (event) {
+searchBar.addEventListener("keydown", function (event) {
     if (event.key === "Enter") {
         event.preventDefault();
-        exibirCards();
+        mostrarLivros();
     }
 });
 
-function criarCard(item) {
-    const card = document.createElement('div');
-    card.classList.add('col', 'border', 'border-dark', 'p-3', 'border-5');
+function criarCartao(livro) {
+    const cartao = document.createElement('div');
+    cartao.classList.add('col', 'border', 'border-dark', 'p-3', 'border-5');
 
     const imagem = document.createElement('img');
-    imagem.src = "/img/capa.jpg";
-    imagem.classList.add('card-img');
+    imagem.src = `./Images/${livro.id}.jpg`; 
+    imagem.classList.add('card-img', 'livro-imagem'); 
     imagem.alt = 'Imagem do Livro';
     imagem.style.maxWidth = '100%';
+    imagem.style.height = '600px'; 
+    imagem.style.objectFit = 'cover'; 
     imagem.style.borderRadius = '10px';
-    card.appendChild(imagem);
+    cartao.appendChild(imagem);
 
-    const corpoCard = document.createElement('div');
-    corpoCard.classList.add('corpo-card');
+    const corpoCartao = document.createElement('div');
+    corpoCartao.classList.add('corpo-card');
 
     const titulo = document.createElement('h4');
     titulo.classList.add('titulo-card');
-    titulo.innerHTML = `<br>
-                        <strong>Título:</strong> ${item.titulo}`;
-    corpoCard.appendChild(titulo);
+    titulo.innerHTML = `<br><strong>Título:</strong> ${livro.titulo}`;
+    corpoCartao.appendChild(titulo);
 
     const subTitulos = document.createElement('p');
     subTitulos.classList.add('texto-card');
-    subTitulos.innerHTML = `<strong>Autor:</strong> ${item.autor}<br>
-                        <strong>Ano Publicado:</strong> ${item.anoPublicado}<br>
-                        <strong>Gênero:</strong> ${item.genero}`;
-    corpoCard.appendChild(subTitulos);
+    subTitulos.innerHTML = `<strong>Autor:</strong> ${livro.autor}<br>
+                            <strong>Ano Publicado:</strong> ${livro.anoPublicado}<br>
+                            <strong>Gênero:</strong> ${livro.genero}`;
+    corpoCartao.appendChild(subTitulos);
 
-    card.appendChild(corpoCard);
-    cardContainer.appendChild(card);
+    cartao.appendChild(corpoCartao);
+    cardContainer.appendChild(cartao);
 }
 
-function exibirCards() {
-    const termoDePesquisa = barraDePesquisa.value;
+function mostrarLivros() {
+    const termoPesquisa = searchBar.value;
 
-    if (termoDePesquisa.trim() !== "") {
+    if (termoPesquisa.trim() !== "") {
         cardContainer.innerHTML = "";
 
-        items.filter((item) =>
-            item.titulo.toLowerCase().includes(termoDePesquisa.toLowerCase()) ||
-            item.autor.toLowerCase().includes(termoDePesquisa.toLowerCase()) ||
-            item.anoPublicado.toLowerCase().includes(termoDePesquisa.toLowerCase()) ||
-            item.genero.toLowerCase().includes(termoDePesquisa.toLowerCase())
+        livros.filter((livro) =>
+            livro.titulo.toLowerCase().includes(termoPesquisa.toLowerCase()) ||
+            livro.autor.toLowerCase().includes(termoPesquisa.toLowerCase()) ||
+            livro.anoPublicado.toLowerCase().includes(termoPesquisa.toLowerCase()) ||
+            livro.genero.toLowerCase().includes(termoPesquisa.toLowerCase())
         )
-        .forEach((item) => criarCard(item));
+        .forEach((livro) => criarCartao(livro));
 
     } else {
         cardContainer.innerHTML = "";
+        exibirCards(); 
     }
 }
+
+function exibirCards() {
+    cardContainer.innerHTML = "";
+    livros.forEach((livro) => criarCartao(livro));
+}
+
+const style = document.createElement('style');
+style.innerHTML = `
+    .livro-imagem {
+        width: 100%;
+        height: auto;
+    }
+`;
+document.head.appendChild(style);
